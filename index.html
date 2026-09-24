@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ficha Técnica Digital - UTS</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Header General -->
+    <header class="header">
+        <h1 class="logo-text">UTS</h1>
+        <h2>Gestión de Herramientas</h2>
+        <p>Taller Metalmecánico VRC</p>
+    </header>
+
+    <!-- Spinner de Carga -->
+    <div id="loading" class="loading-screen">
+        <div class="spinner"></div>
+        <p>Cargando información...</p>
+    </div>
+
+    <!-- ================= VISTA 1: HOME (TARJETAS 3D) ================= -->
+    <div id="home-view" class="wrapper" style="display: none;">
+        
+        <!-- Panel de Métricas Rápidas -->
+        <div class="dashboard-stats">
+            <div class="stat-card">
+                <h3 id="stat-total">0</h3>
+                <p>Total</p>
+            </div>
+            <div class="stat-card stat-verde">
+                <h3 id="stat-aptas">0</h3>
+                <p>Aptas</p>
+            </div>
+            <div class="stat-card stat-amarillo">
+                <h3 id="stat-revision">0</h3>
+                <p>Revisión</p>
+            </div>
+            <div class="stat-card stat-rojo">
+                <h3 id="stat-bloqueadas">0</h3>
+                <p>Bloqueadas</p>
+            </div>
+        </div>
+
+        <div class="search-box">
+            <input type="text" id="search-input" placeholder="🔍 Buscar por nombre o código...">
+        </div>
+
+        <div class="filter-bar">
+            <button class="filter-btn active" onclick="filtrarHerramientas('Todas')">Todas</button>
+            <button class="filter-btn btn-v" onclick="filtrarHerramientas('Verde')">🟢 Aptas</button>
+            <button class="filter-btn btn-a" onclick="filtrarHerramientas('Amarillo')">🟡 Revisión</button>
+            <button class="filter-btn btn-r" onclick="filtrarHerramientas('Rojo')">🔴 Bloqueadas</button>
+        </div>
+
+        <!-- Contenedor de las Tarjetas Giratorias -->
+        <div id="tools-list" class="cols">
+            <!-- Se inyectan desde JS -->
+        </div>
+
+        <button class="fab-qr" onclick="alert('Abriendo cámara para escanear QR...')">
+            📷 Escanear
+        </button>
+    </div>
+
+    <!-- ================= VISTA 2: FICHA TÉCNICA INDIVIDUAL ================= -->
+    <main id="app-content" class="detail-container" style="display: none;">
+        <button class="btn-back" id="btn-back">⬅️ Volver al Inventario</button>
+
+        <section class="card">
+            <h3 class="tool-title" id="tool-title">Cargando...</h3>
+            <div class="tool-meta">
+                <p><strong>Marca:</strong> <span id="tool-brand">...</span></p>
+                <p><strong>Modelo:</strong> <span id="tool-model">...</span></p>
+                <p><strong>Ubicación:</strong> <span id="tool-location">...</span></p>
+            </div>
+            <div id="status-badge" class="status-badge">
+                <span class="status-dot"></span> 
+                <span id="status-text">Cargando estado...</span>
+            </div>
+        </section>
+
+        <button class="btn btn-primary" id="btn-pdf" style="display: none;">
+            📄 Abrir Manual de Usuario (PDF)
+        </button>
+
+        <section class="card">
+            <h3 class="card-title">✅ Checklist Pre-Uso</h3>
+            <p class="card-subtitle">Inspección de seguridad</p>
+            
+            <form id="checklist-form">
+                <label class="check-item"><input type="checkbox" class="critical-check"> Cable o clavija deteriorados/cortados</label>
+                <label class="check-item"><input type="checkbox" class="critical-check"> Guarda de seguridad mal ajustada o ausente</label>
+                <label class="check-item"><input type="checkbox" class="critical-check"> Disco/broca fisurado o inadecuado</label>
+                <label class="check-item"><input type="checkbox" class="critical-check"> Gatillo o interruptor no retorna</label>
+            </form>
+            
+            <div id="checklist-alert" class="alert-box" style="display: none;">
+                🚨 CONDICIÓN INSEGURA DETECTADA: Herramienta bloqueada.
+            </div>
+        </section>
+
+        <section class="card">
+            <h3 class="card-title">🔧 Mantenimiento Autónomo</h3>
+            <table class="maint-table">
+                <tr><th>Último Preventivo</th><td id="maint-last">...</td></tr>
+                <tr><th>Próximo Preventivo</th><td id="maint-next">...</td></tr>
+            </table>
+        </section>
+
+        <button class="btn btn-danger" id="btn-report">
+            🚨 Reportar Falla Crítica
+        </button>
+
+        <section class="card" style="border-top: 4px solid var(--warning); margin-top: 25px;">
+            <h3 class="card-title">👨‍🔧 Panel de Mantenimiento</h3>
+            <p class="card-subtitle">Uso exclusivo de supervisores</p>
+            <button class="btn" style="background-color: var(--warning); color: #000;" id="btn-amarillo">🟡 Enviar a Mantenimiento</button>
+            <button class="btn" style="background-color: var(--success); color: #fff;" id="btn-verde">🟢 Habilitar Herramienta</button>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
