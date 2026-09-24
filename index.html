@@ -9,23 +9,20 @@
 </head>
 <body>
 
-    <!-- Header General -->
     <header class="header">
         <h1 class="logo-text">UTS</h1>
         <h2>Gestión de Herramientas</h2>
         <p>Taller Metalmecánico VRC</p>
     </header>
 
-    <!-- Spinner de Carga -->
     <div id="loading" class="loading-screen">
         <div class="spinner"></div>
         <p>Cargando información...</p>
     </div>
 
-    <!-- ================= VISTA 1: HOME (TARJETAS 3D) ================= -->
+    <!-- ================= VISTA 1: HOME ================= -->
     <div id="home-view" class="wrapper" style="display: none;">
         
-        <!-- Panel de Métricas Rápidas -->
         <div class="dashboard-stats">
             <div class="stat-card">
                 <h3 id="stat-total">0</h3>
@@ -56,17 +53,16 @@
             <button class="filter-btn btn-r" onclick="filtrarHerramientas('Rojo')">🔴 Bloqueadas</button>
         </div>
 
-        <!-- Contenedor de las Tarjetas Giratorias -->
-        <div id="tools-list" class="cols">
-            <!-- Se inyectan desde JS -->
-        </div>
-
-        <button class="fab-qr" onclick="alert('Abriendo cámara para escanear QR...')">
-            📷 Escanear
+        <button class="btn btn-primary" onclick="abrirModal('modal-nueva')" style="margin-bottom: 20px;">
+            ➕ Añadir Herramienta Nueva
         </button>
+
+        <div id="tools-list" class="cols"></div>
+
+        <button class="fab-qr" onclick="alert('Abriendo cámara para escanear QR...')">📷 Escanear</button>
     </div>
 
-    <!-- ================= VISTA 2: FICHA TÉCNICA INDIVIDUAL ================= -->
+    <!-- ================= VISTA 2: FICHA TÉCNICA ================= -->
     <main id="app-content" class="detail-container" style="display: none;">
         <button class="btn-back" id="btn-back">⬅️ Volver al Inventario</button>
 
@@ -81,25 +77,30 @@
                 <span class="status-dot"></span> 
                 <span id="status-text">Cargando estado...</span>
             </div>
+            <p id="obs-text" style="display: none; color: var(--danger); font-size: 13px; font-weight: bold; margin-top: 10px; background: #f8d7da; padding: 10px; border-radius: 8px;"></p>
         </section>
 
-        <button class="btn btn-primary" id="btn-pdf" style="display: none;">
-            📄 Abrir Manual de Usuario (PDF)
-        </button>
+        <button class="btn btn-primary" id="btn-pdf" style="display: none;">📄 Abrir Manual de Usuario</button>
 
         <section class="card">
             <h3 class="card-title">✅ Checklist Pre-Uso</h3>
-            <p class="card-subtitle">Inspección de seguridad</p>
-            
             <form id="checklist-form">
-                <label class="check-item"><input type="checkbox" class="critical-check"> Cable o clavija deteriorados/cortados</label>
-                <label class="check-item"><input type="checkbox" class="critical-check"> Guarda de seguridad mal ajustada o ausente</label>
-                <label class="check-item"><input type="checkbox" class="critical-check"> Disco/broca fisurado o inadecuado</label>
-                <label class="check-item"><input type="checkbox" class="critical-check"> Gatillo o interruptor no retorna</label>
+                <label class="check-item"><input type="checkbox" class="critical-check"> Cable o clavija deteriorados</label>
+                <label class="check-item"><input type="checkbox" class="critical-check"> Guarda de seguridad ausente</label>
+                <label class="check-item"><input type="checkbox" class="critical-check"> Disco/broca fisurado</label>
             </form>
             
-            <div id="checklist-alert" class="alert-box" style="display: none;">
-                🚨 CONDICIÓN INSEGURA DETECTADA: Herramienta bloqueada.
+            <!-- Flujo Premium Integrado para Bloqueo -->
+            <div id="checklist-action-area" style="display: none; margin-top: 15px; animation: fadeIn 0.3s ease;">
+                <textarea id="inline-motivo" class="input-form" placeholder="Describe brevemente la falla detectada..." rows="2" style="resize: none;"></textarea>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-danger" style="margin-bottom: 0;" id="btn-confirm-inline">🔒 Bloquear</button>
+                    <button class="btn" style="background: #e9ecef; color: #333; margin-bottom: 0;" id="btn-cancel-inline">Cancelar</button>
+                </div>
+            </div>
+
+            <div id="checklist-alert" class="alert-box" style="display: none; margin-top: 15px;">
+                🚨 CONDICIÓN INSEGURA DETECTADA
             </div>
         </section>
 
@@ -109,19 +110,58 @@
                 <tr><th>Último Preventivo</th><td id="maint-last">...</td></tr>
                 <tr><th>Próximo Preventivo</th><td id="maint-next">...</td></tr>
             </table>
+            <button class="btn" style="background-color: var(--uts-dark); color: white; padding: 10px; margin-top: 15px;" onclick="prepararModalFechas()">
+                🗓️ Modificar Fechas
+            </button>
         </section>
 
-        <button class="btn btn-danger" id="btn-report">
-            🚨 Reportar Falla Crítica
-        </button>
+        <button class="btn btn-danger" onclick="abrirModal('modal-falla')">🚨 Reportar Falla Crítica</button>
 
         <section class="card" style="border-top: 4px solid var(--warning); margin-top: 25px;">
             <h3 class="card-title">👨‍🔧 Panel de Mantenimiento</h3>
-            <p class="card-subtitle">Uso exclusivo de supervisores</p>
-            <button class="btn" style="background-color: var(--warning); color: #000;" id="btn-amarillo">🟡 Enviar a Mantenimiento</button>
+            <button class="btn" style="background-color: var(--warning); color: #000;" id="btn-amarillo">🟡 Enviar a Revisión</button>
             <button class="btn" style="background-color: var(--success); color: #fff;" id="btn-verde">🟢 Habilitar Herramienta</button>
         </section>
     </main>
+
+    <!-- ================= MODALES PREMIUM ================= -->
+    <!-- Modal: Nueva Herramienta -->
+    <div id="modal-nueva" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 15px; color: var(--uts-dark);">Nueva Herramienta</h3>
+            <input type="text" id="new-nombre" placeholder="Nombre (Ej. Taladro)" class="input-form">
+            <input type="text" id="new-codigo" placeholder="Código (Ej. POT-015)" class="input-form">
+            <input type="text" id="new-marca" placeholder="Marca" class="input-form">
+            <input type="text" id="new-modelo" placeholder="Modelo" class="input-form">
+            <input type="text" id="new-ubicacion" placeholder="Ubicación" class="input-form">
+            <button class="btn btn-primary" onclick="guardarNuevaHerramienta()">Guardar</button>
+            <button class="btn" style="background: #e9ecef; color: #333;" onclick="cerrarModal('modal-nueva')">Cancelar</button>
+        </div>
+    </div>
+
+    <!-- Modal: Edición de Fechas -->
+    <div id="modal-fechas" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 15px; color: var(--uts-dark);">Actualizar Fechas</h3>
+            <label class="modal-label">Último Mantenimiento:</label>
+            <input type="date" id="edit-last" class="input-form">
+            <label class="modal-label">Próximo Mantenimiento:</label>
+            <input type="date" id="edit-next" class="input-form">
+            <button class="btn btn-primary" onclick="guardarFechas()">Guardar Cambios</button>
+            <button class="btn" style="background: #e9ecef; color: #333;" onclick="cerrarModal('modal-fechas')">Cancelar</button>
+        </div>
+    </div>
+
+    <!-- Modal: Reporte de Falla Directa -->
+    <div id="modal-falla" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 15px; color: var(--danger);">🚨 Reportar Falla</h3>
+            <p style="font-size: 13px; color: #555; margin-bottom: 15px;">La herramienta será bloqueada inmediatamente para el resto del taller.</p>
+            <textarea id="falla-motivo" class="input-form" placeholder="Detalla el problema encontrado..." rows="3" style="resize: none;"></textarea>
+            <button class="btn btn-danger" onclick="procesarFallaManual()">Confirmar Bloqueo</button>
+            <button class="btn" style="background: #e9ecef; color: #333;" onclick="cerrarModal('modal-falla')">Cancelar</button>
+        </div>
+    </div>
 
     <script src="app.js"></script>
 </body>
