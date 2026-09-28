@@ -22,23 +22,18 @@
 
     <!-- ================= VISTA 1: HOME ================= -->
     <div id="home-view" class="wrapper" style="display: none;">
-        
         <div class="dashboard-stats">
             <div class="stat-card">
-                <h3 id="stat-total">0</h3>
-                <p>Total</p>
+                <h3 id="stat-total">0</h3><p>Total</p>
             </div>
             <div class="stat-card stat-verde">
-                <h3 id="stat-aptas">0</h3>
-                <p>Aptas</p>
+                <h3 id="stat-aptas">0</h3><p>Aptas</p>
             </div>
             <div class="stat-card stat-amarillo">
-                <h3 id="stat-revision">0</h3>
-                <p>Revisión</p>
+                <h3 id="stat-revision">0</h3><p>Revisión</p>
             </div>
             <div class="stat-card stat-rojo">
-                <h3 id="stat-bloqueadas">0</h3>
-                <p>Bloqueadas</p>
+                <h3 id="stat-bloqueadas">0</h3><p>Bloqueadas</p>
             </div>
         </div>
 
@@ -54,11 +49,10 @@
         </div>
 
         <button class="btn btn-primary" onclick="abrirModal('modal-nueva')" style="margin-bottom: 20px;">
-            ➕ Añadir Herramienta Nueva
+            ➕ Añadir Herramienta
         </button>
 
         <div id="tools-list" class="cols"></div>
-
         <button class="fab-qr" onclick="alert('Abriendo cámara para escanear QR...')">📷 Escanear</button>
     </div>
 
@@ -72,6 +66,7 @@
                 <p><strong>Marca:</strong> <span id="tool-brand">...</span></p>
                 <p><strong>Modelo:</strong> <span id="tool-model">...</span></p>
                 <p><strong>Ubicación:</strong> <span id="tool-location">...</span></p>
+                <p><strong>Criticidad:</strong> <span id="tool-crit" class="crit-badge">Calculando...</span></p>
             </div>
             <div id="status-badge" class="status-badge">
                 <span class="status-dot"></span> 
@@ -90,7 +85,6 @@
                 <label class="check-item"><input type="checkbox" class="critical-check"> Disco/broca fisurado</label>
             </form>
             
-            <!-- Flujo Premium Integrado para Bloqueo -->
             <div id="checklist-action-area" style="display: none; margin-top: 15px; animation: fadeIn 0.3s ease;">
                 <textarea id="inline-motivo" class="input-form" placeholder="Describe brevemente la falla detectada..." rows="2" style="resize: none;"></textarea>
                 <div style="display: flex; gap: 10px;">
@@ -98,10 +92,7 @@
                     <button class="btn" style="background: #e9ecef; color: #333; margin-bottom: 0;" id="btn-cancel-inline">Cancelar</button>
                 </div>
             </div>
-
-            <div id="checklist-alert" class="alert-box" style="display: none; margin-top: 15px;">
-                🚨 CONDICIÓN INSEGURA DETECTADA
-            </div>
+            <div id="checklist-alert" class="alert-box" style="display: none; margin-top: 15px;">🚨 CONDICIÓN INSEGURA DETECTADA</div>
         </section>
 
         <section class="card">
@@ -118,14 +109,14 @@
         <button class="btn btn-danger" onclick="abrirModal('modal-falla')">🚨 Reportar Falla Crítica</button>
 
         <section class="card" style="border-top: 4px solid var(--warning); margin-top: 25px;">
-            <h3 class="card-title">👨‍🔧 Panel de Mantenimiento</h3>
+            <h3 class="card-title">👨‍🔧 Panel de Supervisor</h3>
+            <button class="btn" style="background-color: #6c757d; color: #fff;" onclick="abrirModal('modal-matriz')">📊 Evaluar Criticidad</button>
             <button class="btn" style="background-color: var(--warning); color: #000;" id="btn-amarillo">🟡 Enviar a Revisión</button>
             <button class="btn" style="background-color: var(--success); color: #fff;" id="btn-verde">🟢 Habilitar Herramienta</button>
         </section>
     </main>
 
     <!-- ================= MODALES PREMIUM ================= -->
-    <!-- Modal: Nueva Herramienta -->
     <div id="modal-nueva" class="modal">
         <div class="modal-content">
             <h3 style="margin-bottom: 15px; color: var(--uts-dark);">Nueva Herramienta</h3>
@@ -139,7 +130,6 @@
         </div>
     </div>
 
-    <!-- Modal: Edición de Fechas -->
     <div id="modal-fechas" class="modal">
         <div class="modal-content">
             <h3 style="margin-bottom: 15px; color: var(--uts-dark);">Actualizar Fechas</h3>
@@ -152,14 +142,45 @@
         </div>
     </div>
 
-    <!-- Modal: Reporte de Falla Directa -->
     <div id="modal-falla" class="modal">
         <div class="modal-content">
             <h3 style="margin-bottom: 15px; color: var(--danger);">🚨 Reportar Falla</h3>
-            <p style="font-size: 13px; color: #555; margin-bottom: 15px;">La herramienta será bloqueada inmediatamente para el resto del taller.</p>
+            <p style="font-size: 13px; color: #555; margin-bottom: 15px;">La herramienta será bloqueada inmediatamente.</p>
             <textarea id="falla-motivo" class="input-form" placeholder="Detalla el problema encontrado..." rows="3" style="resize: none;"></textarea>
             <button class="btn btn-danger" onclick="procesarFallaManual()">Confirmar Bloqueo</button>
             <button class="btn" style="background: #e9ecef; color: #333;" onclick="cerrarModal('modal-falla')">Cancelar</button>
+        </div>
+    </div>
+
+    <!-- NUEVO: Modal Matriz de Criticidad General -->
+    <div id="modal-matriz" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 10px; color: var(--uts-dark);">Formulario de Criticidad</h3>
+            <p style="font-size: 12px; color: #555; margin-bottom: 15px;">Evalúa los parámetros para asignar la prioridad de mantenimiento de esta máquina.</p>
+            
+            <label class="modal-label">1. Riesgo de Seguridad (Accidentalidad)</label>
+            <select id="crit-seguridad" class="input-form">
+                <option value="3">Alto (Cortes graves, amputaciones)</option>
+                <option value="2">Medio (Golpes, atrapamientos leves)</option>
+                <option value="1">Bajo (Fricción, desgaste)</option>
+            </select>
+
+            <label class="modal-label">2. Impacto en la Producción</label>
+            <select id="crit-produccion" class="input-form">
+                <option value="3">Alto (Detiene todo el proceso)</option>
+                <option value="2">Medio (Reduce la velocidad/calidad)</option>
+                <option value="1">Bajo (Existen herramientas de respaldo)</option>
+            </select>
+
+            <label class="modal-label">3. Frecuencia de Uso</label>
+            <select id="crit-uso" class="input-form">
+                <option value="3">Diario (Alta exigencia)</option>
+                <option value="2">Semanal (Uso intermitente)</option>
+                <option value="1">Ocasional (Uso esporádico)</option>
+            </select>
+
+            <button class="btn btn-primary" onclick="calcularCriticidad()">Calcular y Guardar</button>
+            <button class="btn" style="background: #e9ecef; color: #333;" onclick="cerrarModal('modal-matriz')">Cancelar</button>
         </div>
     </div>
 

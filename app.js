@@ -71,9 +71,6 @@ function filtrarHerramientas(estado) {
     renderizarTarjetasHome(estado === 'Todas' ? inventarioCompleto : inventarioCompleto.filter(h => h.estado === estado));
 }
 
-// ==========================================
-// CONTROL DE MODALES GLOBALES
-// ==========================================
 function abrirModal(id) { document.getElementById(id).style.display = 'flex'; }
 function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
 
@@ -84,7 +81,7 @@ async function guardarNuevaHerramienta() {
         await supabaseClient.from('herramientas').insert([{
             nombre: nombre, codigo_interno: document.getElementById('new-codigo').value, 
             marca: document.getElementById('new-marca').value, modelo: document.getElementById('new-modelo').value, 
-            ubicacion: document.getElementById('new-ubicacion').value, estado: 'Verde', observaciones: ''
+            ubicacion: document.getElementById('new-ubicacion').value, estado: 'Verde', observaciones: '', criticidad: 'No Evaluada'
         }]);
         cerrarModal('modal-nueva');
         cargarInventarioHome(); 
@@ -105,6 +102,11 @@ async function cargarDatosHerramienta(id) {
         document.getElementById('tool-location').innerText = data.ubicacion || 'N/A';
         document.getElementById('maint-last').innerText = data.ultimo_preventivo || 'N/A';
         document.getElementById('maint-next').innerText = data.proximo_preventivo || 'N/A';
+
+        // Manejo de Criticidad
+        const critBadge = document.getElementById('tool-crit');
+        critBadge.innerText = data.criticidad || 'No Evaluada';
+        critBadge.className = 'crit-badge ' + (data.criticidad === 'Alta' ? 'crit-alta' : (data.criticidad === 'Media' ? 'crit-media' : (data.criticidad === 'Baja' ? 'crit-baja' : 'crit-none')));
 
         const obsBox = document.getElementById('obs-text');
         if (data.estado === 'Rojo' && data.observaciones) {
@@ -143,10 +145,32 @@ async function cambiarEstadoBD(nuevoEstado, observacion = '') {
 }
 
 // ==========================================
-// FLUJO PREMIUM: CALENDARIO Y CHECKLIST
+// CÁLCULO DE CRITICIDAD
+// ==========================================
+async function calcularCriticidad() {
+    const seg = parseInt(document.getElementById('crit-seguridad').value);
+    const prod = parseInt(document.getElementById('crit-produccion').value);
+    const uso = parseInt(document.getElementById('crit-uso').value);
+    
+    const puntajeTotal = seg + prod + uso;
+    let resultado = 'Baja';
+    
+    if (puntajeTotal >= 8) resultado = 'Alta';
+    else if (puntajeTotal >= 5) resultado = 'Media';
+
+    try {
+        await supabaseClient.from('herramientas').update({ criticidad: resultado }).eq('id', idHerramienta);
+        cerrarModal('modal-matriz');
+        cargarDatosHerramienta(idHerramienta);
+    } catch (error) {
+        console.error("Error guardando criticidad:", error);
+    }
+}
+
+// ==========================================
+// FECHAS Y CHECKLIST
 // ==========================================
 function prepararModalFechas() {
-    // Carga los valores actuales en los calendarios nativos
     const lastDate = document.getElementById('maint-last').innerText;
     const nextDate = document.getElementById('maint-next').innerText;
     if (lastDate !== 'N/A') document.getElementById('edit-last').value = lastDate;
@@ -159,13 +183,11 @@ async function guardarFechas() {
     const prox = document.getElementById('edit-next').value;
     if (ult && prox) {
         await supabaseClient.from('herramientas').update({ ultimo_preventivo: ult, proximo_preventivo: prox }).eq('id', idHerramienta);
-        document.getElementById('maint-last').innerText = ult;
-        document.getElementById('maint-next').innerText = prox;
         cerrarModal('modal-fechas');
+        cargarDatosHerramienta(idHerramienta);
     }
 }
 
-// Lógica Integrada del Checklist
 const checkboxes = document.querySelectorAll('.critical-check');
 const alertBox = document.getElementById('checklist-alert');
 const actionArea = document.getElementById('checklist-action-area');
@@ -173,15 +195,10 @@ const actionArea = document.getElementById('checklist-action-area');
 checkboxes.forEach(chk => {
     chk.addEventListener('change', function() {
         this.closest('.check-item').classList.toggle('item-danger', this.checked);
-
         if (document.querySelectorAll('.critical-check:checked').length > 0) {
-            alertBox.style.display = 'block';
-            actionArea.style.display = 'block';
-            actualizarSemaforo('Rojo'); // Bloqueo visual preventivo
+            alertBox.style.display = 'block'; actionArea.style.display = 'block'; actualizarSemaforo('Rojo'); 
         } else {
-            alertBox.style.display = 'none';
-            actionArea.style.display = 'none';
-            cargarDatosHerramienta(idHerramienta); // Restaura estado real si desmarcan
+            alertBox.style.display = 'none'; actionArea.style.display = 'none'; cargarDatosHerramienta(idHerramienta); 
         }
     });
 });
@@ -194,13 +211,11 @@ document.getElementById('btn-confirm-inline').addEventListener('click', () => {
 
 document.getElementById('btn-cancel-inline').addEventListener('click', () => {
     document.querySelectorAll('.critical-check').forEach(chk => { chk.checked = false; chk.closest('.check-item').classList.remove('item-danger'); });
-    alertBox.style.display = 'none';
-    actionArea.style.display = 'none';
+    alertBox.style.display = 'none'; actionArea.style.display = 'none';
     document.getElementById('inline-motivo').value = '';
     cargarDatosHerramienta(idHerramienta);
 });
 
-// Lógica de Reporte Manual (Falla Crítica)
 function procesarFallaManual() {
     let motivo = document.getElementById('falla-motivo').value || 'Falla reportada por operario';
     cerrarModal('modal-falla');
@@ -208,7 +223,6 @@ function procesarFallaManual() {
     document.getElementById('falla-motivo').value = '';
 }
 
-// Botones de Supervisor
 document.getElementById('btn-amarillo')?.addEventListener('click', () => {
     if (confirm("¿Pasar herramienta a Revisión?")) cambiarEstadoBD('Amarillo', '');
 });
