@@ -14,9 +14,29 @@
 
 body { background-color: var(--bg-color); color: var(--text-main); -webkit-font-smoothing: antialiased; }
 
+
 .header { background-color: var(--uts-dark); color: white; padding: 25px 20px; text-align: center; border-bottom: 4px solid var(--uts-green); }
 .logo-text { font-size: 28px; font-weight: 900; letter-spacing: 2px; color: var(--uts-green); margin-bottom: 5px; }
 
+.header { 
+    background-color: var(--card-bg); /* Fondo blanco para que el logo se fusione */
+    padding: 15px 20px; 
+    text-align: center; 
+    border-bottom: 3px solid var(--uts-green); 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05); /* Sombra elegante */
+}
+
+.main-logo {
+    max-width: 140px; /* Tamaño perfecto para móviles */
+    height: auto;
+    display: block;
+    margin: 0 auto;
+    transition: transform 0.3s ease;
+}
+
+.main-logo:active {
+    transform: scale(0.95); /* Pequeño efecto al tocar el logo */
+}
 .wrapper { width: 90%; max-width: 1000px; margin: 20px auto; padding-bottom: 80px; }
 
 /* Dashboard & Filtros */
