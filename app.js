@@ -19,7 +19,7 @@ async function cargarInventarioHome() {
         document.getElementById('loading').style.display = 'none';
         document.getElementById('home-view').style.display = 'block';
     } catch (err) {
-        document.getElementById('loading').innerHTML = `<div class="alert-box">Error de conexión.</div>`;
+        document.getElementById('loading').innerHTML = `<div class="alert-box">Error de conexión con la base de datos.</div>`;
     }
 }
 
@@ -38,7 +38,9 @@ function renderizarTarjetasHome(lista) {
     lista.forEach(item => {
         let badgeClass = item.estado === 'Verde' ? 'bg-verde' : (item.estado === 'Amarillo' ? 'bg-amarillo' : 'bg-rojo');
         let badgeText = item.estado === 'Verde' ? 'Apta' : (item.estado === 'Amarillo' ? 'Revisión' : 'Bloqueada');
-        let imgUrl = 'https://images.unsplash.com/photo-1586864387967-d02ef85d93e8?auto=format&fit=crop&w=500&q=80';
+        
+        // Integración de Imágenes de Supabase
+        let imgUrl = item.url_imagen ? item.url_imagen : 'https://images.unsplash.com/photo-1586864387967-d02ef85d93e8?auto=format&fit=crop&w=500&q=80';
 
         const col = document.createElement('div');
         col.className = 'col';
@@ -46,7 +48,10 @@ function renderizarTarjetasHome(lista) {
         col.innerHTML = `
             <div class="container" onclick="window.location.href='index.html?id=${item.id}'">
                 <div class="front" style="background-image: url('${imgUrl}')">
-                    <div class="inner"><p>${item.nombre}</p><span class="mini-badge ${badgeClass}" style="color: #000;">${badgeText}</span></div>
+                    <div class="inner">
+                        <p>${item.nombre}</p>
+                        <span class="mini-badge ${badgeClass}" style="color: #000;">${badgeText}</span>
+                    </div>
                 </div>
                 <div class="back">
                     <div class="inner">
@@ -71,6 +76,9 @@ function filtrarHerramientas(estado) {
     renderizarTarjetasHome(estado === 'Todas' ? inventarioCompleto : inventarioCompleto.filter(h => h.estado === estado));
 }
 
+// ==========================================
+// CONTROL DE MODALES Y CREACIÓN
+// ==========================================
 function abrirModal(id) { document.getElementById(id).style.display = 'flex'; }
 function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
 
@@ -79,13 +87,20 @@ async function guardarNuevaHerramienta() {
     if (!nombre) return;
     try {
         await supabaseClient.from('herramientas').insert([{
-            nombre: nombre, codigo_interno: document.getElementById('new-codigo').value, 
-            marca: document.getElementById('new-marca').value, modelo: document.getElementById('new-modelo').value, 
-            ubicacion: document.getElementById('new-ubicacion').value, estado: 'Verde', observaciones: '', criticidad: 'No Evaluada'
+            nombre: nombre, 
+            codigo_interno: document.getElementById('new-codigo').value, 
+            marca: document.getElementById('new-marca').value, 
+            modelo: document.getElementById('new-modelo').value, 
+            ubicacion: document.getElementById('new-ubicacion').value, 
+            estado: 'Verde', 
+            observaciones: '', 
+            criticidad: 'No Evaluada',
+            url_imagen: '',
+            url_video: ''
         }]);
         cerrarModal('modal-nueva');
         cargarInventarioHome(); 
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error("Error guardando herramienta", err); }
 }
 
 // ==========================================
@@ -103,11 +118,12 @@ async function cargarDatosHerramienta(id) {
         document.getElementById('maint-last').innerText = data.ultimo_preventivo || 'N/A';
         document.getElementById('maint-next').innerText = data.proximo_preventivo || 'N/A';
 
-        // Manejo de Criticidad
+        // Lógica de Criticidad
         const critBadge = document.getElementById('tool-crit');
         critBadge.innerText = data.criticidad || 'No Evaluada';
         critBadge.className = 'crit-badge ' + (data.criticidad === 'Alta' ? 'crit-alta' : (data.criticidad === 'Media' ? 'crit-media' : (data.criticidad === 'Baja' ? 'crit-baja' : 'crit-none')));
 
+        // Lógica de Observaciones / Falla
         const obsBox = document.getElementById('obs-text');
         if (data.estado === 'Rojo' && data.observaciones) {
             obsBox.innerText = `⚠️ Motivo de bloqueo: ${data.observaciones}`;
@@ -118,9 +134,15 @@ async function cargarDatosHerramienta(id) {
 
         actualizarSemaforo(data.estado);
 
+        // Lógica del botón PDF
         const btnPdf = document.getElementById('btn-pdf');
         if (data.url_pdf) { btnPdf.style.display = 'block'; btnPdf.onclick = () => window.open(data.url_pdf, '_blank'); } 
         else { btnPdf.style.display = 'none'; }
+
+        // Lógica del botón de YouTube / Tutorial
+        const btnVideo = document.getElementById('btn-video');
+        if (data.url_video) { btnVideo.style.display = 'block'; btnVideo.onclick = () => window.open(data.url_video, '_blank'); } 
+        else { btnVideo.style.display = 'none'; }
 
         document.getElementById('loading').style.display = 'none';
         document.getElementById('app-content').style.display = 'block';
@@ -162,13 +184,11 @@ async function calcularCriticidad() {
         await supabaseClient.from('herramientas').update({ criticidad: resultado }).eq('id', idHerramienta);
         cerrarModal('modal-matriz');
         cargarDatosHerramienta(idHerramienta);
-    } catch (error) {
-        console.error("Error guardando criticidad:", error);
-    }
+    } catch (error) { console.error("Error guardando criticidad:", error); }
 }
 
 // ==========================================
-// FECHAS Y CHECKLIST
+// FECHAS Y CHECKLIST PREVENTIVO
 // ==========================================
 function prepararModalFechas() {
     const lastDate = document.getElementById('maint-last').innerText;
@@ -204,7 +224,7 @@ checkboxes.forEach(chk => {
 });
 
 document.getElementById('btn-confirm-inline').addEventListener('click', () => {
-    let motivo = document.getElementById('inline-motivo').value || 'Bloqueo por revisión de checklist';
+    let motivo = document.getElementById('inline-motivo').value || 'Bloqueo preventivo por checklist';
     actionArea.style.display = 'none';
     cambiarEstadoBD('Rojo', motivo);
 });
@@ -217,12 +237,13 @@ document.getElementById('btn-cancel-inline').addEventListener('click', () => {
 });
 
 function procesarFallaManual() {
-    let motivo = document.getElementById('falla-motivo').value || 'Falla reportada por operario';
+    let motivo = document.getElementById('falla-motivo').value || 'Falla crítica reportada por operario';
     cerrarModal('modal-falla');
     cambiarEstadoBD('Rojo', motivo);
     document.getElementById('falla-motivo').value = '';
 }
 
+// Controles de Supervisor
 document.getElementById('btn-amarillo')?.addEventListener('click', () => {
     if (confirm("¿Pasar herramienta a Revisión?")) cambiarEstadoBD('Amarillo', '');
 });
@@ -237,4 +258,5 @@ document.getElementById('btn-verde')?.addEventListener('click', () => {
 
 document.getElementById('btn-back')?.addEventListener('click', () => window.location.href = 'index.html');
 
+// Inicializador
 if (idHerramienta) cargarDatosHerramienta(idHerramienta); else cargarInventarioHome();
