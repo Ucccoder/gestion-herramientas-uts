@@ -4,27 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Gestión de Herramientas - UTS</title>
-    <!-- Conexión con Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- Encabezado Premium con Logo -->
-    <header class="header">
+    <header class="header" style="position: relative;">
         <img src="logo.jpg" alt="Logo Taller VRC" class="main-logo">
+        <!-- Botón de Modo Admin -->
+        <button id="btn-admin-toggle" class="btn-admin" onclick="toggleAdmin()">🔒 Modo Admin</button>
     </header>
 
-    <!-- Pantalla de Carga -->
     <div id="loading" class="loading-screen">
         <div class="spinner"></div>
         <p>Cargando información...</p>
     </div>
 
-    <!-- ================= VISTA 1: HOME (INVENTARIO) ================= -->
+    <!-- ================= VISTA 1: HOME ================= -->
     <div id="home-view" class="wrapper" style="display: none;">
-        
-        <!-- Panel de Estadísticas -->
         <div class="dashboard-stats">
             <div class="stat-card">
                 <h3 id="stat-total">0</h3><p>Total</p>
@@ -40,12 +37,10 @@
             </div>
         </div>
 
-        <!-- Buscador -->
         <div class="search-box">
             <input type="text" id="search-input" placeholder="🔍 Buscar por nombre o código...">
         </div>
 
-        <!-- Filtros Rápidos -->
         <div class="filter-bar">
             <button class="filter-btn active" onclick="filtrarHerramientas('Todas')">Todas</button>
             <button class="filter-btn btn-v" onclick="filtrarHerramientas('Verde')">🟢 Aptas</button>
@@ -53,21 +48,18 @@
             <button class="filter-btn btn-r" onclick="filtrarHerramientas('Rojo')">🔴 Bloqueadas</button>
         </div>
 
-        <!-- Botón Añadir -->
-        <button class="btn btn-primary" onclick="abrirModal('modal-nueva')" style="margin-bottom: 20px;">
-            ➕ Añadir Herramienta
+        <!-- Botón Añadir (OCULTO POR DEFECTO, SOLO ADMIN) -->
+        <button id="btn-add-tool" class="btn btn-primary" onclick="abrirModal('modal-nueva')" style="display: none; margin-bottom: 20px; background-color: var(--uts-green); border: none;">
+            ➕ Añadir Herramienta Nueva
         </button>
 
-        <!-- Contenedor de las Tarjetas de Herramientas -->
         <div id="tools-list" class="cols"></div>
-        
     </div>
 
-    <!-- ================= VISTA 2: FICHA TÉCNICA DETALLADA ================= -->
+    <!-- ================= VISTA 2: FICHA TÉCNICA ================= -->
     <main id="app-content" class="detail-container" style="display: none;">
         <button class="btn-back" id="btn-back">⬅️ Volver al Inventario</button>
 
-        <!-- Tarjeta Principal: Información y Estado -->
         <section class="card">
             <h3 class="tool-title" id="tool-title">Cargando...</h3>
             <div class="tool-meta">
@@ -80,17 +72,14 @@
                 <span class="status-dot"></span> 
                 <span id="status-text">Cargando estado...</span>
             </div>
-            <!-- Mensaje de error/bloqueo -->
             <p id="obs-text" style="display: none; color: var(--danger); font-size: 13px; font-weight: bold; margin-top: 10px; background: #f8d7da; padding: 10px; border-radius: 8px;"></p>
         </section>
 
-        <!-- Botones de Documentación y Video (Aparecen si hay link) -->
         <div style="display: flex; gap: 10px; margin-bottom: 15px;">
             <button class="btn btn-primary" id="btn-pdf" style="display: none; flex: 1; margin-bottom: 0;">📄 Manual PDF</button>
             <button class="btn" id="btn-video" style="display: none; flex: 1; background-color: #ff0000; color: white; margin-bottom: 0;">▶️ Ver Tutorial</button>
         </div>
 
-        <!-- Tarjeta de Seguridad: Checklist Universal -->
         <section class="card">
             <h3 class="card-title">✅ Checklist General (Pre-Uso)</h3>
             <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Marca únicamente las fallas encontradas (aplica según el equipo):</p>
@@ -102,18 +91,16 @@
                 <label class="check-item"><input type="checkbox" class="critical-check"> <b>Protección (Si aplica):</b> Guardas de seguridad ausentes o flojas</label>
             </form>
             
-            <!-- Zona interactiva si hay falla -->
             <div id="checklist-action-area" style="display: none; margin-top: 15px; animation: fadeIn 0.3s ease;">
                 <textarea id="inline-motivo" class="input-form" placeholder="Describe brevemente la falla detectada..." rows="2" style="resize: none;"></textarea>
                 <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-danger" style="margin-bottom: 0;" id="btn-confirm-inline">🔒 Bloquear</button>
+                    <button class="btn btn-danger" style="margin-bottom: 0;" id="btn-confirm-inline">🔒 Bloquear y Notificar</button>
                     <button class="btn" style="background: #e9ecef; color: #333; margin-bottom: 0;" id="btn-cancel-inline">Cancelar</button>
                 </div>
             </div>
             <div id="checklist-alert" class="alert-box" style="display: none; margin-top: 15px;">🚨 CONDICIÓN INSEGURA DETECTADA</div>
         </section>
 
-        <!-- Tarjeta de Mantenimiento Preventivo -->
         <section class="card">
             <h3 class="card-title">🔧 Mantenimiento Autónomo</h3>
             <table class="maint-table">
@@ -125,10 +112,8 @@
             </button>
         </section>
 
-        <!-- Botón para reportar daños directos -->
         <button class="btn btn-danger" onclick="abrirModal('modal-falla')">🚨 Reportar Falla Crítica</button>
 
-        <!-- Panel Administrativo Exclusivo -->
         <section class="card" style="border-top: 4px solid var(--warning); margin-top: 25px;">
             <h3 class="card-title">👨‍🔧 Panel de Supervisor</h3>
             <button class="btn" style="background-color: #6c757d; color: #fff;" onclick="abrirModal('modal-matriz')">📊 Evaluar Criticidad</button>
@@ -137,10 +122,7 @@
         </section>
     </main>
 
-
-    <!-- ================= MODALES FLOTANTES ================= -->
-    
-    <!-- Modal: Nueva Herramienta -->
+    <!-- Modales -->
     <div id="modal-nueva" class="modal">
         <div class="modal-content">
             <h3 style="margin-bottom: 15px; color: var(--uts-dark);">Nueva Herramienta</h3>
@@ -154,7 +136,7 @@
         </div>
     </div>
 
-    <!-- Modal: Editar Fechas -->
+    <!-- Otros modales (fechas, falla, matriz) -->
     <div id="modal-fechas" class="modal">
         <div class="modal-content">
             <h3 style="margin-bottom: 15px; color: var(--uts-dark);">Actualizar Fechas</h3>
@@ -166,51 +148,43 @@
             <button class="btn" style="background: #e9ecef; color: #333;" onclick="cerrarModal('modal-fechas')">Cancelar</button>
         </div>
     </div>
-
-    <!-- Modal: Reportar Falla Directa -->
+    
     <div id="modal-falla" class="modal">
         <div class="modal-content">
             <h3 style="margin-bottom: 15px; color: var(--danger);">🚨 Reportar Falla</h3>
             <p style="font-size: 13px; color: #555; margin-bottom: 15px;">La herramienta será bloqueada inmediatamente.</p>
             <textarea id="falla-motivo" class="input-form" placeholder="Detalla el problema encontrado..." rows="3" style="resize: none;"></textarea>
-            <button class="btn btn-danger" onclick="procesarFallaManual()">Confirmar Bloqueo</button>
+            <button class="btn btn-danger" onclick="procesarFallaManual()">Confirmar Bloqueo y Notificar</button>
             <button class="btn" style="background: #e9ecef; color: #333;" onclick="cerrarModal('modal-falla')">Cancelar</button>
         </div>
     </div>
-
-    <!-- Modal: Matriz de Criticidad -->
+    
     <div id="modal-matriz" class="modal">
         <div class="modal-content">
             <h3 style="margin-bottom: 10px; color: var(--uts-dark);">Formulario de Criticidad</h3>
-            <p style="font-size: 12px; color: #555; margin-bottom: 15px;">Evalúa los parámetros para asignar la prioridad de mantenimiento.</p>
-            
             <label class="modal-label">1. Riesgo de Seguridad</label>
             <select id="crit-seguridad" class="input-form">
                 <option value="3">Alto (Cortes graves, amputaciones)</option>
                 <option value="2">Medio (Golpes, atrapamientos leves)</option>
                 <option value="1">Bajo (Fricción, desgaste)</option>
             </select>
-
             <label class="modal-label">2. Impacto en Producción</label>
             <select id="crit-produccion" class="input-form">
                 <option value="3">Alto (Detiene el proceso)</option>
                 <option value="2">Medio (Reduce la velocidad)</option>
                 <option value="1">Bajo (Hay respaldo)</option>
             </select>
-
             <label class="modal-label">3. Frecuencia de Uso</label>
             <select id="crit-uso" class="input-form">
                 <option value="3">Diario (Alta exigencia)</option>
                 <option value="2">Semanal (Uso intermitente)</option>
                 <option value="1">Ocasional (Uso esporádico)</option>
             </select>
-
             <button class="btn btn-primary" onclick="calcularCriticidad()">Calcular y Guardar</button>
             <button class="btn" style="background: #e9ecef; color: #333;" onclick="cerrarModal('modal-matriz')">Cancelar</button>
         </div>
     </div>
 
-    <!-- Archivo JS Lógico -->
     <script src="app.js"></script>
 </body>
 </html>

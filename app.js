@@ -7,6 +7,31 @@ const idHerramienta = urlParams.get('id');
 let inventarioCompleto = [];
 
 // ==========================================
+// MODO ADMINISTRADOR (PIN: 1234)
+// ==========================================
+let isAdmin = false;
+function toggleAdmin() {
+    if (!isAdmin) {
+        let pin = prompt("Por favor, ingrese el PIN de Administrador (Prueba: 1234):");
+        if (pin === "1234") {
+            isAdmin = true;
+            document.getElementById('btn-add-tool').style.display = 'block';
+            document.getElementById('btn-admin-toggle').classList.add('active');
+            document.getElementById('btn-admin-toggle').innerText = '🔓 Modo Admin Activo';
+            alert("✅ Modo Administrador Activado");
+        } else if (pin !== null) {
+            alert("❌ PIN Incorrecto");
+        }
+    } else {
+        isAdmin = false;
+        document.getElementById('btn-add-tool').style.display = 'none';
+        document.getElementById('btn-admin-toggle').classList.remove('active');
+        document.getElementById('btn-admin-toggle').innerText = '🔒 Modo Admin';
+        alert("🔒 Modo Administrador Desactivado");
+    }
+}
+
+// ==========================================
 // VISTA 1: HOME Y DASHBOARD
 // ==========================================
 async function cargarInventarioHome() {
@@ -39,7 +64,6 @@ function renderizarTarjetasHome(lista) {
         let badgeClass = item.estado === 'Verde' ? 'bg-verde' : (item.estado === 'Amarillo' ? 'bg-amarillo' : 'bg-rojo');
         let badgeText = item.estado === 'Verde' ? 'Apta' : (item.estado === 'Amarillo' ? 'Revisión' : 'Bloqueada');
         
-        // Integración de Imágenes de Supabase
         let imgUrl = item.url_imagen ? item.url_imagen : 'https://images.unsplash.com/photo-1586864387967-d02ef85d93e8?auto=format&fit=crop&w=500&q=80';
 
         const col = document.createElement('div');
@@ -123,7 +147,7 @@ async function cargarDatosHerramienta(id) {
         critBadge.innerText = data.criticidad || 'No Evaluada';
         critBadge.className = 'crit-badge ' + (data.criticidad === 'Alta' ? 'crit-alta' : (data.criticidad === 'Media' ? 'crit-media' : (data.criticidad === 'Baja' ? 'crit-baja' : 'crit-none')));
 
-        // Lógica de Observaciones / Falla
+        // Lógica de Observaciones
         const obsBox = document.getElementById('obs-text');
         if (data.estado === 'Rojo' && data.observaciones) {
             obsBox.innerText = `⚠️ Motivo de bloqueo: ${data.observaciones}`;
@@ -134,12 +158,11 @@ async function cargarDatosHerramienta(id) {
 
         actualizarSemaforo(data.estado);
 
-        // Lógica del botón PDF
+        // Lógica Botones
         const btnPdf = document.getElementById('btn-pdf');
         if (data.url_pdf) { btnPdf.style.display = 'block'; btnPdf.onclick = () => window.open(data.url_pdf, '_blank'); } 
         else { btnPdf.style.display = 'none'; }
 
-        // Lógica del botón de YouTube / Tutorial
         const btnVideo = document.getElementById('btn-video');
         if (data.url_video) { btnVideo.style.display = 'block'; btnVideo.onclick = () => window.open(data.url_video, '_blank'); } 
         else { btnVideo.style.display = 'none'; }
@@ -165,6 +188,69 @@ async function cambiarEstadoBD(nuevoEstado, observacion = '') {
         cargarDatosHerramienta(idHerramienta); 
     } catch (err) { console.error("Error BD", err); }
 }
+
+// ==========================================
+// RESEND: ENVÍO DE CORREOS
+// ==========================================
+async function enviarCorreoMantenimiento(motivoFalla) {
+    const titulo = document.getElementById('tool-title').innerText; 
+    const ubicacion = document.getElementById('tool-location').innerText;
+
+    try {
+        await fetch('/api/correo', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                motivoFalla: motivoFalla,
+                titulo: titulo,
+                ubicacion: ubicacion
+            })
+        });
+        console.log("Correo enviado al mini-servidor exitosamente.");
+    } catch (error) {
+        console.error("Error enviando correo:", error);
+    }
+}
+
+    const htmlTemplate = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+        <div style="background-color: #dc3545; color: white; padding: 20px; text-align: center;">
+            <h2 style="margin: 0;">🚨 Alerta Crítica de Mantenimiento</h2>
+        </div>
+        <div style="padding: 20px; background-color: #f9f9f9;">
+            <p style="font-size: 16px; color: #333;">Una herramienta ha reprobado el Checklist Pre-Uso en el Taller VRC y ha sido <strong>bloqueada preventivamente</strong> en el sistema.</p>
+            <div style="background-color: white; padding: 15px; border-radius: 8px; border-left: 5px solid #dc3545; margin-top: 20px;">
+                <p style="margin: 8px 0; font-size: 15px;"><strong>🛠️ Herramienta:</strong> ${nombreHerramienta}</p>
+                <p style="margin: 8px 0; font-size: 15px;"><strong>🏷️ Código Interno:</strong> ${codigoHerramienta}</p>
+                <p style="margin: 8px 0; font-size: 15px;"><strong>📍 Ubicación:</strong> ${ubicacion}</p>
+                <p style="margin: 8px 0; font-size: 15px; color: #dc3545;"><strong>⚠️ Falla Reportada:</strong> ${motivoFalla}</p>
+            </div>
+            <p style="margin-top: 25px; font-size: 14px; color: #666; text-align: center;">Por favor, ingrese a la plataforma UTS para habilitarla tras realizar la inspección.</p>
+        </div>
+    </div>
+    `;
+
+    try {
+        await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${RESEND_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                from: 'Sistema UTS <onboarding@resend.dev>',
+                to: 'tecnicouc89@gmail.com',
+                subject: `🚨 Bloqueo Urgente: ${nombreHerramienta} (${codigoHerramienta})`,
+                html: htmlTemplate
+            })
+        });
+        console.log("Correo enviado exitosamente.");
+    } catch (error) {
+        console.error("Error enviando correo:", error);
+    }
+
 
 // ==========================================
 // CÁLCULO DE CRITICIDAD
@@ -223,10 +309,12 @@ checkboxes.forEach(chk => {
     });
 });
 
-document.getElementById('btn-confirm-inline').addEventListener('click', () => {
+document.getElementById('btn-confirm-inline').addEventListener('click', async () => {
     let motivo = document.getElementById('inline-motivo').value || 'Bloqueo preventivo por checklist';
     actionArea.style.display = 'none';
-    cambiarEstadoBD('Rojo', motivo);
+    await cambiarEstadoBD('Rojo', motivo);
+    enviarCorreoMantenimiento(motivo);
+    alert("Bloqueo registrado y correo de alerta enviado a mantenimiento.");
 });
 
 document.getElementById('btn-cancel-inline').addEventListener('click', () => {
@@ -236,10 +324,12 @@ document.getElementById('btn-cancel-inline').addEventListener('click', () => {
     cargarDatosHerramienta(idHerramienta);
 });
 
-function procesarFallaManual() {
+async function procesarFallaManual() {
     let motivo = document.getElementById('falla-motivo').value || 'Falla crítica reportada por operario';
     cerrarModal('modal-falla');
-    cambiarEstadoBD('Rojo', motivo);
+    await cambiarEstadoBD('Rojo', motivo);
+    enviarCorreoMantenimiento(motivo);
+    alert("Herramienta bloqueada y correo enviado a mantenimiento.");
     document.getElementById('falla-motivo').value = '';
 }
 

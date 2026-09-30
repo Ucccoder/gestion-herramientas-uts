@@ -14,29 +14,47 @@
 
 body { background-color: var(--bg-color); color: var(--text-main); -webkit-font-smoothing: antialiased; }
 
-
-.header { background-color: var(--uts-dark); color: white; padding: 25px 20px; text-align: center; border-bottom: 4px solid var(--uts-green); }
-.logo-text { font-size: 28px; font-weight: 900; letter-spacing: 2px; color: var(--uts-green); margin-bottom: 5px; }
-
+/* ENCABEZADO Y LOGO */
 .header { 
-    background-color: var(--card-bg); /* Fondo blanco para que el logo se fusione */
+    background-color: var(--card-bg); 
     padding: 15px 20px; 
     text-align: center; 
     border-bottom: 3px solid var(--uts-green); 
-    box-shadow: 0 4px 10px rgba(0,0,0,0.05); /* Sombra elegante */
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
+    position: relative;
 }
-
 .main-logo {
-    max-width: 140px; /* Tamaño perfecto para móviles */
+    max-width: 140px; 
     height: auto;
     display: block;
     margin: 0 auto;
     transition: transform 0.3s ease;
 }
-
 .main-logo:active {
-    transform: scale(0.95); /* Pequeño efecto al tocar el logo */
+    transform: scale(0.95);
 }
+
+/* BOTÓN MODO ADMIN */
+.btn-admin {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: transparent;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: bold;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: 0.3s;
+}
+.btn-admin:hover, .btn-admin.active {
+    background: var(--uts-green);
+    color: white;
+    border-color: var(--uts-green);
+}
+
 .wrapper { width: 90%; max-width: 1000px; margin: 20px auto; padding-bottom: 80px; }
 
 /* Dashboard & Filtros */
@@ -114,7 +132,6 @@ body { background-color: var(--bg-color); color: var(--text-main); -webkit-font-
 .input-form:focus { border-color: var(--uts-green); }
 .modal-label { display: block; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; text-align: left; }
 
-.fab-qr { position: fixed; bottom: 20px; right: 20px; background: var(--uts-green); color: white; border: none; padding: 15px 20px; border-radius: 30px; font-weight: bold; box-shadow: 0 4px 10px rgba(130, 181, 65, 0.4); cursor: pointer; z-index: 1000; }
 .loading-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
 .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--uts-green); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
 
